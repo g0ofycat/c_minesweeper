@@ -1,5 +1,5 @@
 /* --- TODO ---
-  - Make grid size have no limit (A-Z on X axis), Add color, Fix Alphabetical 'flag_char'
+  - Make grid size have no limit (A-Z on X axis), Change #defines to char
 */
 
 #include <stdio.h>
@@ -15,7 +15,7 @@
 
 #define row_amount 16
 #define col_amount 16
-#define mine_amount 32
+#define mine_amount 64
 
 #define mine_char "*"
 #define starting_char "X"
@@ -24,6 +24,12 @@
 // =====================
 //  STRUCTS
 // =====================
+
+typedef struct
+{
+  char *character;
+  int colorCode;
+} char_colormap;
 
 typedef struct
 {
@@ -45,6 +51,38 @@ typedef struct
   int game_over;
   int mines_initialized;
 } minesweeper_struct;
+
+// =====================
+//  VARIABLES
+// =====================
+
+char *STR_0 = "0";
+char *STR_1 = "1";
+char *STR_2 = "2";
+char *STR_3 = "3";
+char *STR_4 = "4";
+char *STR_5 = "5";
+char *STR_6 = "6";
+char *STR_7 = "7";
+char *STR_8 = "8";
+char *STR_START = starting_char;
+char *STR_MINE = mine_char;
+char *STR_FLAG = flag_char;
+
+char_colormap colorMap[] = {
+    {"0", 16},
+    {"1", 21},
+    {"2", 27},
+    {"3", 33},
+    {"4", 39},
+    {"5", 45},
+    {"6", 51},
+    {"7", 87},
+    {"8", 123},
+    {"9", 159},
+    {starting_char, 48},
+    {flag_char, 196},
+    {mine_char, 124}};
 
 // =====================
 //  HELPERS
@@ -119,16 +157,31 @@ void _parseMove(const char *move, int *row, int *col)
   }
 }
 
-// is_safe_zone(): Check if the coordinates (r, c) are within a 3x3 zone around (safe_row, safe_col)
+// _is_safe_zone(): Check if the coordinates (r, c) are within a 3x3 zone around (safe_row, safe_col)
 // @param r: Row to check
 // @param c: Column to check
 // @param safe_row: Center row of the safe zone
 // @param safe_col: Center column of the safe zone
 // @return: 1 if inside the safe zone, 0 otherwise
-int is_safe_zone(int r, int c, int safe_row, int safe_col)
+int _is_safe_zone(int r, int c, int safe_row, int safe_col)
 {
   return (r >= safe_row - 1 && r <= safe_row + 1 &&
           c >= safe_col - 1 && c <= safe_col + 1);
+}
+
+// _getColor(): Returns the value linked to the key in the colorMap
+// @param character: The character to get the color of
+// @return colorCode: 15 if it cannot find the 'colorCode'
+int _getColor(char *character)
+{
+  int size = sizeof(colorMap) / sizeof(colorMap[0]);
+  for (int i = 0; i < size; i++)
+  {
+    if (strcmp(colorMap[i].character, character) == 0)
+      return colorMap[i].colorCode;
+  }
+
+  return 15;
 }
 
 // _returnInputVector(): Prompt the user for a move and return it as an input_coordinate struct
@@ -161,13 +214,10 @@ void _printMatrixData(Vector2D **matrix, int rows, int cols)
     for (int c = 0; c < cols; c++)
     {
       char *dataAttribute = matrix[r][c].data;
-      if (dataAttribute != NULL)
+      if (dataAttribute != NULL && dataAttribute[0] != '\0')
       {
-        printf("%s ", dataAttribute);
-      }
-      else
-      {
-        printf("? ");
+        int color = _getColor(dataAttribute);
+        printf("\x1b[38;5;%dm%s\x1b[0m ", color, dataAttribute);
       }
     }
     printf("\n");
@@ -213,7 +263,7 @@ void _renderNumbers(Vector2D **matrix, int rows, int cols)
   {
     for (int c = 0; c < cols; c++)
     {
-      if (strcmp(matrix[r][c].data, mine_char) == 0)
+      if (strcmp(matrix[r][c].data, STR_MINE) == 0)
         continue;
 
       int count = 0;
@@ -225,20 +275,62 @@ void _renderNumbers(Vector2D **matrix, int rows, int cols)
           int nc = c + dc;
           if (nr >= 0 && nr < rows && nc >= 0 && nc < cols)
           {
-            if (strcmp(matrix[nr][nc].data, mine_char) == 0)
+            if (strcmp(matrix[nr][nc].data, STR_MINE) == 0)
               count++;
           }
         }
       }
 
-      char buffer[2];
-      buffer[0] = count + '0';
-      buffer[1] = '\0';
+      // this fucking sucks
 
-      if (matrix[r][c].data != starting_char && matrix[r][c].data != mine_char)
+      if (matrix[r][c].data != STR_START &&
+          matrix[r][c].data != STR_MINE &&
+          matrix[r][c].data != STR_FLAG &&
+          matrix[r][c].data != STR_0 &&
+          matrix[r][c].data != STR_1 &&
+          matrix[r][c].data != STR_2 &&
+          matrix[r][c].data != STR_3 &&
+          matrix[r][c].data != STR_4 &&
+          matrix[r][c].data != STR_5 &&
+          matrix[r][c].data != STR_6 &&
+          matrix[r][c].data != STR_7 &&
+          matrix[r][c].data != STR_8)
+      {
         free(matrix[r][c].data);
+      }
 
-      matrix[r][c].data = strdup(buffer);
+      // this too
+
+      switch (count)
+      {
+      case 0:
+        matrix[r][c].data = (char *)STR_0;
+        break;
+      case 1:
+        matrix[r][c].data = (char *)STR_1;
+        break;
+      case 2:
+        matrix[r][c].data = (char *)STR_2;
+        break;
+      case 3:
+        matrix[r][c].data = (char *)STR_3;
+        break;
+      case 4:
+        matrix[r][c].data = (char *)STR_4;
+        break;
+      case 5:
+        matrix[r][c].data = (char *)STR_5;
+        break;
+      case 6:
+        matrix[r][c].data = (char *)STR_6;
+        break;
+      case 7:
+        matrix[r][c].data = (char *)STR_7;
+        break;
+      case 8:
+        matrix[r][c].data = (char *)STR_8;
+        break;
+      }
     }
   }
 }
@@ -252,19 +344,34 @@ void _renderNumbers(Vector2D **matrix, int rows, int cols)
 // @param safe_col: Column of the initial safe move
 void _renderMines(Vector2D **matrix, int rows, int cols, int mineCount, int safe_row, int safe_col)
 {
-  int placed = 0;
-  while (placed < mineCount)
-  {
-    int r = rand() % rows;
-    int c = rand() % cols;
+  int total = rows * cols;
+  int *indices = malloc(total * sizeof(int));
+  for (int i = 0; i < total; i++)
+    indices[i] = i;
 
-    if (is_safe_zone(r, c, safe_row, safe_col) || strcmp(matrix[r][c].data, mine_char) == 0)
+  for (int i = total - 1; i > 0; i--)
+  {
+    int j = rand() % (i + 1);
+    int tmp = indices[i];
+    indices[i] = indices[j];
+    indices[j] = tmp;
+  }
+
+  int placed = 0;
+  for (int k = 0; k < total && placed < mineCount; k++)
+  {
+    int r = indices[k] / cols;
+    int c = indices[k] % cols;
+
+    if (_is_safe_zone(r, c, safe_row, safe_col))
       continue;
 
     free(matrix[r][c].data);
     matrix[r][c].data = strdup(mine_char);
     placed++;
   }
+
+  free(indices);
 }
 
 // _renderMove(): Reveal a cell and recursively reveal adjacent empty cells
@@ -429,6 +536,7 @@ minesweeper_struct *minesweeper_init(int rows, int cols, char *startingChar)
 {
   assert(row_amount < 27);
   assert(col_amount < 27);
+  assert(mine_amount < row_amount * col_amount);
 
   minesweeper_struct *game = malloc(sizeof(minesweeper_struct));
 
@@ -460,7 +568,7 @@ void minesweeper_game_loop(minesweeper_struct *game)
 
     char *move_str = _inputListener();
 
-    if (strncmp(move_str, flag_char, 1) == 0)
+    if (move_str[0] == flag_char[0])
     {
       input_coordinate coords;
       _parseMove(move_str + 1, &coords.row, &coords.col);
@@ -476,7 +584,7 @@ void minesweeper_game_loop(minesweeper_struct *game)
 
     if (strcmp(move_str, "--HELP") == 0)
     {
-      printf("\n--- COMMANDS ---\n\n- Playing moves: <Character><Integer>. Characters are on the X-Axis and the Integers are on the Y-Axis. (e.x. A1, B2, etc.)\n\n- Flagging: ?<Character><Integer>. Flags a certain cell; Doing it on a cell with a flag will un-flag it. (e.x. ?C4, ?G10, etc.)\n\n- Quitting the game: --quit.\n");
+      printf("\n--- COMMANDS ---\n\n- Playing moves: <Character><Integer>. Characters are on the X-Axis and the Integers are on the Y-Axis. (e.x. A1, B2, etc.)\n\n- Flagging (Check #define flag_char): flag_char<Character><Integer>. Flags a certain cell; Doing it on a cell with a flag will un-flag it. (e.x. ?C4, ?G10, etc.)\n\n- Quitting the game: --quit.\n");
       _waitForEnter();
       continue;
     }
