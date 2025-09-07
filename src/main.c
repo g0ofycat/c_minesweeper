@@ -79,7 +79,7 @@ void _waitForEnter()
 // @return: Pointer to a static buffer containing the user input
 char *_inputListener()
 {
-  static char moveCoord[10];
+  static char moveCoord[32];
 
   printf("\nType '--help' for commands: ");
   scanf("%9s", moveCoord);
@@ -476,7 +476,7 @@ void minesweeper_game_loop(minesweeper_struct *game)
 
     if (strcmp(move_str, "--HELP") == 0)
     {
-      printf("\n--- COMMANDS ---\n\n- Playing moves: <Character><Interger>. Characters are on the X-Axis and the Intergers are on the Y-Axis. (e.x. A1, B2, etc.)\n\n- Flagging: ?<Character><Interger>. Flags a certain cell; Doing it on a cell with a flag will un-flag it. (e.x. ?C4, ?G10, etc.)\n\n- Quitting the game: --quit.\n");
+      printf("\n--- COMMANDS ---\n\n- Playing moves: <Character><Integer>. Characters are on the X-Axis and the Integers are on the Y-Axis. (e.x. A1, B2, etc.)\n\n- Flagging: ?<Character><Integer>. Flags a certain cell; Doing it on a cell with a flag will un-flag it. (e.x. ?C4, ?G10, etc.)\n\n- Quitting the game: --quit.\n");
       _waitForEnter();
       continue;
     }
@@ -539,17 +539,25 @@ void minesweeper_destroy(minesweeper_struct *game)
   {
     for (int c = 0; c < col_amount; c++)
     {
-      char *data = game->hidden_matrix[r][c].data;
-      if (data != starting_char && data != mine_char)
+
+      char *hiddenData = game->hidden_matrix[r][c].data;
+
+      if (hiddenData != starting_char && hiddenData != mine_char)
       {
-        free(data);
+        free(hiddenData);
+      }
+
+      char *visibleData = game->visible_matrix[r][c].data;
+
+      if (visibleData != hiddenData)
+      {
+        free(visibleData);
       }
     }
   }
 
   _freeMatrix(game->hidden_matrix, row_amount);
   _freeMatrix(game->visible_matrix, row_amount);
-
   free(game);
 }
 
