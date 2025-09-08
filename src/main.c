@@ -463,7 +463,7 @@ int _checkWin(minesweeper_struct *game)
 // @param is_flag: Pointer to int that will be set to 1 if move is a flag command
 // @return: 1 if coordinates are valid, 0 if invalid
 int _parseAndValidateMove(char *move_str, minesweeper_struct *game,
-                             input_coordinate *coords, int *is_flag)
+                          input_coordinate *coords, int *is_flag)
 {
   size_t len = strlen(move_str);
   *is_flag = 0;
