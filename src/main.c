@@ -88,8 +88,8 @@ void _freeMatrix(Vector2D **matrix, int rows)
   free(matrix);
 }
 
-// _clear_screen(): Helper function to clear screen
-void _clear_screen(void)
+// _clearScreen(): Helper function to clear screen
+void _clearScreen(void)
 {
 #ifdef _WIN32
   system("cls");
@@ -156,22 +156,22 @@ void _parseMove(const char *move, int *row, int *col)
   }
 }
 
-// _is_safe_zone(): Check if the coordinates (r, c) are within a 3x3 zone around (safe_row, safe_col)
+// _isSafeZone(): Check if the coordinates (r, c) are within a 3x3 zone around (safe_row, safe_col)
 // @param r: Row to check
 // @param c: Column to check
 // @param safe_row: Center row of the safe zone
 // @param safe_col: Center column of the safe zone
 // @return: 1 if inside the safe zone, 0 otherwise
-int _is_safe_zone(int r, int c, int safe_row, int safe_col)
+int _isSafeZone(int r, int c, int safe_row, int safe_col)
 {
   return (r >= safe_row - 1 && r <= safe_row + 1 &&
           c >= safe_col - 1 && c <= safe_col + 1);
 }
 
-// _get_color(): Returns the value linked to the key in the colorMap
+// _getColor(): Returns the value linked to the key in the colorMap
 // @param character: The character to get the color of
 // @return: colorCode: 15 if it cannot find the 'colorCode'
-int _get_color(char character)
+int _getColor(char character)
 {
   int size = sizeof(colorMap) / sizeof(colorMap[0]);
   for (int i = 0; i < size; i++)
@@ -198,7 +198,7 @@ void _printMatrixData(Vector2D **matrix, int rows, int cols)
     for (int c = 0; c < cols; c++)
     {
       char dataAttribute = matrix[r][c].data;
-      int color = _get_color(dataAttribute);
+      int color = _getColor(dataAttribute);
       printf("\x1b[38;5;%dm%c\x1b[0m ", color, dataAttribute);
     }
     printf("\n");
@@ -234,14 +234,14 @@ void _printMatrixVectors(Vector2D **matrix, int rows, int cols)
 //  BOARD API
 // =====================
 
-// init_Matrix2D(): Allocate and initialize a 2D matrix of Vector2D structs
+// init_matrix_2D(): Allocate and initialize a 2D matrix of Vector2D structs
 // @param rows: Number of rows
 // @param cols: Number of columns
 // @param startingChar: Initial character for each cell's data
 // @return: Pointer to the allocated matrix
-Vector2D **init_Matrix2D(int rows, int cols, char startingChar)
+Vector2D **init_matrix_2D(int rows, int cols, char startingChar)
 {
-  Vector2D **matrix = (Vector2D **)malloc(rows * sizeof(Vector2D *));
+  Vector2D **matrix = malloc(rows * sizeof(*matrix));
 
   for (int i = 0; i < rows; i++)
   {
@@ -261,22 +261,22 @@ Vector2D **init_Matrix2D(int rows, int cols, char startingChar)
   return matrix;
 }
 
-// init_HiddenMatrix(): Initialize the hidden matrix for minesweeper
+// init_hidden_matrix(): Wrapper for init_matrix_2D, used to create the hidden minesweeper board
 // @param rows: Number of rows
 // @param cols: Number of columns
 // @param startingChar: Initial character for each cell's data
 // @return: Pointer to the allocated hidden matrix
-Vector2D **init_HiddenMatrix(int rows, int cols, char startingChar)
+Vector2D **init_hidden_matrix(int rows, int cols, char startingChar)
 {
-  return init_Matrix2D(rows, cols, startingChar);
+  return init_matrix_2D(rows, cols, startingChar);
 }
 
-// set_MatrixData(): Set the data of a specific cell in the matrix
+// set_matrix_data(): Set the data of a specific cell in the matrix
 // @param matrix: The matrix
 // @param row: Row index of the cell
 // @param col: Column index of the cell
 // @param value: Character to set as the cell's data
-void set_MatrixData(Vector2D **matrix, int row, int col, char value)
+void set_matrix_data(Vector2D **matrix, int row, int col, char value)
 {
   matrix[row][col].data = value;
 }
@@ -349,7 +349,7 @@ void _renderMines(Vector2D **matrix, int rows, int cols, int mineCount, int safe
     int r = indices[k] / cols;
     int c = indices[k] % cols;
 
-    if (_is_safe_zone(r, c, safe_row, safe_col))
+    if (_isSafeZone(r, c, safe_row, safe_col))
       continue;
 
     matrix[r][c].data = mine_char;
@@ -403,9 +403,9 @@ void _renderMove(minesweeper_struct *game, int row, int col)
   }
 }
 
-// _reveal_board(): Reveal all cells on the visible matrix by copying from the hidden matrix
+// _revealBoard(): Reveal all cells on the visible matrix by copying from the hidden matrix
 // @param game: Pointer to the game state
-void _reveal_board(minesweeper_struct *game)
+void _revealBoard(minesweeper_struct *game)
 {
   for (int r = 0; r < game->rows; r++)
   {
@@ -437,10 +437,10 @@ void _toggleFlag(minesweeper_struct *game, int row, int col)
   }
 }
 
-// _check_win(): Check if the player has won the game
+// _checkWin(): Check if the player has won the game
 // @param game: Pointer to the game state
 // @return: 1 if all non-mine cells are revealed, 0 otherwise
-int _check_win(minesweeper_struct *game)
+int _checkWin(minesweeper_struct *game)
 {
   for (int r = 0; r < game->rows; r++)
   {
@@ -456,13 +456,13 @@ int _check_win(minesweeper_struct *game)
   return 1;
 }
 
-// _parse_and_validate_move(): Parses user input and validates coordinates
+// _parseAndValidateMove(): Parses user input and validates coordinates
 // @param move_str: String containing the user's move input
 // @param game: Pointer to the minesweeper game struct
 // @param coords: Pointer to coordinate struct to store parsed coordinates
 // @param is_flag: Pointer to int that will be set to 1 if move is a flag command
 // @return: 1 if coordinates are valid, 0 if invalid
-int _parse_and_validate_move(char *move_str, minesweeper_struct *game,
+int _parseAndValidateMove(char *move_str, minesweeper_struct *game,
                              input_coordinate *coords, int *is_flag)
 {
   size_t len = strlen(move_str);
@@ -483,34 +483,34 @@ int _parse_and_validate_move(char *move_str, minesweeper_struct *game,
            coords->row >= game->rows || coords->col >= game->cols);
 }
 
-// _display_game(): Clears screen and displays the current game board
+// _displayGame(): Clears screen and displays the current game board
 // @param game: Pointer to the minesweeper game struct
-void _display_game(minesweeper_struct *game)
+void _displayGame(minesweeper_struct *game)
 {
-  _clear_screen();
+  _clearScreen();
 
   _printMatrixData(game->visible_matrix, game->rows, game->cols);
 }
 
-// _show_help(): Displays the help menu with available commands
-void _show_help(void)
+// _showHelp(): Displays the help menu with available commands
+void _showHelp(void)
 {
   printf("\n--- COMMANDS ---\n\n"
-         "- Playing moves: <Character><Integer>. Characters are on the X-Axis and Integers on Y-Axis. (e.g. A1, B2)\n"
-         "- Flagging: <Character><Integer>%c. Flags/unflags a cell. (e.g. C4%c, G10%c)\n"
+         "- Playing moves: <Character><Integer>. Characters are on the X-Axis and Integers on Y-Axis. (e.g. A1, B2)\n\n"
+         "- Flagging: <Character><Integer>%c. Flags/unflags a cell. (e.g. C4%c, G10%c)\n\n"
          "- Quitting: --quit\n",
          flag_char, flag_char, flag_char);
 
   _waitForEnter();
 }
 
-// _show_game_end(): Reveals the board and displays win/loss message
+// _showGameEnd(): Reveals the board and displays win/loss message
 // @param game: Pointer to the minesweeper game struct
 // @param won: 1 if player won, 0 if player lost
-void _show_game_end(minesweeper_struct *game, int won)
+void _showGameEnd(minesweeper_struct *game, int won)
 {
-  _reveal_board(game);
-  _display_game(game);
+  _revealBoard(game);
+  _displayGame(game);
   printf(won ? "\n--- YOU WIN! ---\n" : "\n--- BOMB HIT. GAME OVER. ---\n");
 }
 
@@ -540,9 +540,9 @@ minesweeper_struct *minesweeper_init(int seed, int rows, int cols, int mines_amt
 
   game->mines_amt = mines_amt;
 
-  game->visible_matrix = init_Matrix2D(rows, cols, starting_char);
+  game->visible_matrix = init_matrix_2D(rows, cols, starting_char);
 
-  game->hidden_matrix = init_HiddenMatrix(rows, cols, starting_char);
+  game->hidden_matrix = init_hidden_matrix(rows, cols, starting_char);
 
   game->game_over = 0;
 
@@ -557,7 +557,7 @@ void minesweeper_game_loop(minesweeper_struct *game)
 {
   while (!game->game_over)
   {
-    _display_game(game);
+    _displayGame(game);
 
     char *move_str = _inputListener();
 
@@ -569,7 +569,7 @@ void minesweeper_game_loop(minesweeper_struct *game)
 
     if (strcmp(move_str, "--HELP") == 0)
     {
-      _show_help();
+      _showHelp();
       continue;
     }
 
@@ -577,7 +577,7 @@ void minesweeper_game_loop(minesweeper_struct *game)
 
     int is_flag;
 
-    if (!_parse_and_validate_move(move_str, game, &coords, &is_flag))
+    if (!_parseAndValidateMove(move_str, game, &coords, &is_flag))
     {
       printf("\n--- Invalid command. Type '--help' for all available commands ---\n");
       _waitForEnter();
@@ -592,9 +592,9 @@ void minesweeper_game_loop(minesweeper_struct *game)
     {
       _renderMove(game, coords.row, coords.col);
 
-      if (_check_win(game))
+      if (_checkWin(game))
       {
-        _show_game_end(game, 1);
+        _showGameEnd(game, 1);
         break;
       }
     }
@@ -602,7 +602,7 @@ void minesweeper_game_loop(minesweeper_struct *game)
 
   if (game->game_over)
   {
-    _show_game_end(game, 0);
+    _showGameEnd(game, 0);
   }
 }
 
