@@ -1,7 +1,3 @@
-/* --- TODO ---
-  - Make grid size have no limit (A-Z on X axis)
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,8 +88,18 @@ void _freeMatrix(Vector2D **matrix, int rows)
   free(matrix);
 }
 
+// _clear_screen(): Helper function to clear screen
+void _clear_screen(void)
+{
+#ifdef _WIN32
+  system("cls");
+#else
+  system("clear");
+#endif
+}
+
 // _waitForEnter(): Pause execution until the user presses Enter
-void _waitForEnter()
+void _waitForEnter(void)
 {
   int c;
   while ((c = getchar()) != '\n' && c != EOF)
@@ -104,7 +110,7 @@ void _waitForEnter()
 
 // _inputListener(): Prompt the user for input and return it in uppercase
 // @return: Pointer to a static buffer containing the user input
-char *_inputListener()
+char *_inputListener(void)
 {
   static char moveCoord[32];
 
@@ -118,6 +124,10 @@ char *_inputListener()
 
   return moveCoord;
 }
+
+// =====================
+//  MISC
+// =====================
 
 // _parseMove(): Convert a move string (like "A1") into row and column indices
 // @param move: Input string representing the move
@@ -158,10 +168,10 @@ int _is_safe_zone(int r, int c, int safe_row, int safe_col)
           c >= safe_col - 1 && c <= safe_col + 1);
 }
 
-// _getColor(): Returns the value linked to the key in the colorMap
+// _get_color(): Returns the value linked to the key in the colorMap
 // @param character: The character to get the color of
-// @return colorCode: 15 if it cannot find the 'colorCode'
-int _getColor(char character)
+// @return: colorCode: 15 if it cannot find the 'colorCode'
+int _get_color(char character)
 {
   int size = sizeof(colorMap) / sizeof(colorMap[0]);
   for (int i = 0; i < size; i++)
@@ -170,19 +180,6 @@ int _getColor(char character)
       return colorMap[i].colorCode;
   }
   return 15;
-}
-
-// _returnInputVector(): Prompt the user for a move and return it as an input_coordinate struct
-// @return: input_coordinate containing parsed row and column indices
-input_coordinate _returnInputVector()
-{
-  input_coordinate coordinate;
-
-  char *move = _inputListener();
-
-  _parseMove(move, &coordinate.row, &coordinate.col);
-
-  return coordinate;
 }
 
 // =====================
@@ -201,7 +198,7 @@ void _printMatrixData(Vector2D **matrix, int rows, int cols)
     for (int c = 0; c < cols; c++)
     {
       char dataAttribute = matrix[r][c].data;
-      int color = _getColor(dataAttribute);
+      int color = _get_color(dataAttribute);
       printf("\x1b[38;5;%dm%c\x1b[0m ", color, dataAttribute);
     }
     printf("\n");
@@ -217,7 +214,7 @@ void _printMatrixData(Vector2D **matrix, int rows, int cols)
   printf("\n");
 }
 
-// _printMatrixVectors(): Print the x and y coordinates of a matrix of Vector2D structs
+// _printMatrixVectors(): Print the X and Y coordinates of a matrix of Vector2D structs
 // @param matrix: The matrix to print
 // @param rows: Number of rows in the matrix
 // @param cols: Number of columns in the matrix
@@ -227,10 +224,61 @@ void _printMatrixVectors(Vector2D **matrix, int rows, int cols)
   {
     for (int c = 0; c < cols; c++)
     {
-      printf("(%.2f, %.2f) ", matrix[r][c].x, matrix[r][c].y);
+      printf("(%d, %d) ", matrix[r][c].x, matrix[r][c].y);
     }
     printf("\n");
   }
+}
+
+// =====================
+//  BOARD API
+// =====================
+
+// init_Matrix2D(): Allocate and initialize a 2D matrix of Vector2D structs
+// @param rows: Number of rows
+// @param cols: Number of columns
+// @param startingChar: Initial character for each cell's data
+// @return: Pointer to the allocated matrix
+Vector2D **init_Matrix2D(int rows, int cols, char startingChar)
+{
+  Vector2D **matrix = (Vector2D **)malloc(rows * sizeof(Vector2D *));
+
+  for (int i = 0; i < rows; i++)
+  {
+    matrix[i] = (Vector2D *)malloc(cols * sizeof(Vector2D));
+  }
+
+  for (int r = 0; r < rows; r++)
+  {
+    for (int c = 0; c < cols; c++)
+    {
+      matrix[r][c].x = c;
+      matrix[r][c].y = r;
+      matrix[r][c].data = startingChar;
+    }
+  }
+
+  return matrix;
+}
+
+// init_HiddenMatrix(): Initialize the hidden matrix for minesweeper
+// @param rows: Number of rows
+// @param cols: Number of columns
+// @param startingChar: Initial character for each cell's data
+// @return: Pointer to the allocated hidden matrix
+Vector2D **init_HiddenMatrix(int rows, int cols, char startingChar)
+{
+  return init_Matrix2D(rows, cols, startingChar);
+}
+
+// set_MatrixData(): Set the data of a specific cell in the matrix
+// @param matrix: The matrix
+// @param row: Row index of the cell
+// @param col: Column index of the cell
+// @param value: Character to set as the cell's data
+void set_MatrixData(Vector2D **matrix, int row, int col, char value)
+{
+  matrix[row][col].data = value;
 }
 
 // =====================
@@ -355,6 +403,19 @@ void _renderMove(minesweeper_struct *game, int row, int col)
   }
 }
 
+// _reveal_board(): Reveal all cells on the visible matrix by copying from the hidden matrix
+// @param game: Pointer to the game state
+void _reveal_board(minesweeper_struct *game)
+{
+  for (int r = 0; r < game->rows; r++)
+  {
+    for (int c = 0; c < game->cols; c++)
+    {
+      game->visible_matrix[r][c].data = game->hidden_matrix[r][c].data;
+    }
+  }
+}
+
 // _toggleFlag(): Place or remove a flag on a cell
 // @param game: Pointer to the game state
 // @param row: Row of the cell
@@ -376,10 +437,10 @@ void _toggleFlag(minesweeper_struct *game, int row, int col)
   }
 }
 
-// check_win(): Check if the player has won the game
+// _check_win(): Check if the player has won the game
 // @param game: Pointer to the game state
 // @return: 1 if all non-mine cells are revealed, 0 otherwise
-int check_win(minesweeper_struct *game)
+int _check_win(minesweeper_struct *game)
 {
   for (int r = 0; r < game->rows; r++)
   {
@@ -395,68 +456,62 @@ int check_win(minesweeper_struct *game)
   return 1;
 }
 
-// =====================
-//  BOARD API
-// =====================
-
-// init_Matrix2D(): Allocate and initialize a 2D matrix of Vector2D structs
-// @param rows: Number of rows
-// @param cols: Number of columns
-// @param startingChar: Initial character for each cell's data
-// @return: Pointer to the allocated matrix
-Vector2D **init_Matrix2D(int rows, int cols, char startingChar)
+// _parse_and_validate_move(): Parses user input and validates coordinates
+// @param move_str: String containing the user's move input
+// @param game: Pointer to the minesweeper game struct
+// @param coords: Pointer to coordinate struct to store parsed coordinates
+// @param is_flag: Pointer to int that will be set to 1 if move is a flag command
+// @return: 1 if coordinates are valid, 0 if invalid
+int _parse_and_validate_move(char *move_str, minesweeper_struct *game,
+                             input_coordinate *coords, int *is_flag)
 {
-  Vector2D **matrix = (Vector2D **)malloc(rows * sizeof(Vector2D *));
+  size_t len = strlen(move_str);
+  *is_flag = 0;
 
-  for (int i = 0; i < rows; i++)
+  if (len > 1 && move_str[len - 1] == flag_char)
   {
-    matrix[i] = (Vector2D *)malloc(cols * sizeof(Vector2D));
+    move_str[len - 1] = '\0';
+    *is_flag = 1;
   }
 
-  for (int r = 0; r < rows; r++)
-  {
-    for (int c = 0; c < cols; c++)
-    {
-      matrix[r][c].x = c;
-      matrix[r][c].y = r;
-      matrix[r][c].data = startingChar;
-    }
-  }
+  _parseMove(move_str, &coords->row, &coords->col);
 
-  return matrix;
+  if (*is_flag)
+    move_str[len - 1] = flag_char;
+
+  return !(coords->row == -1 || coords->col == -1 ||
+           coords->row >= game->rows || coords->col >= game->cols);
 }
 
-// init_hiddenMatrix(): Initialize the hidden matrix for minesweeper
-// @param rows: Number of rows
-// @param cols: Number of columns
-// @param startingChar: Initial character for each cell's data
-// @return: Pointer to the allocated hidden matrix
-Vector2D **init_hiddenMatrix(int rows, int cols, char startingChar)
+// _display_game(): Clears screen and displays the current game board
+// @param game: Pointer to the minesweeper game struct
+void _display_game(minesweeper_struct *game)
 {
-  return init_Matrix2D(rows, cols, startingChar);
+  _clear_screen();
+
+  _printMatrixData(game->visible_matrix, game->rows, game->cols);
 }
 
-// reveal_board(): Reveal all cells on the visible matrix by copying from the hidden matrix
-// @param game: Pointer to the game state
-void reveal_board(minesweeper_struct *game)
+// _show_help(): Displays the help menu with available commands
+void _show_help(void)
 {
-  for (int r = 0; r < game->rows; r++)
-  {
-    for (int c = 0; c < game->cols; c++)
-    {
-      game->visible_matrix[r][c].data = game->hidden_matrix[r][c].data;
-    }
-  }
+  printf("\n--- COMMANDS ---\n\n"
+         "- Playing moves: <Character><Integer>. Characters are on the X-Axis and Integers on Y-Axis. (e.g. A1, B2)\n"
+         "- Flagging: <Character><Integer>%c. Flags/unflags a cell. (e.g. C4%c, G10%c)\n"
+         "- Quitting: --quit\n",
+         flag_char, flag_char, flag_char);
+
+  _waitForEnter();
 }
 
-// set_MatrixData(): Set the data of a specific cell in the matrix
-// @param matrix: The matrix
-// @param row: Row index of the cell
-// @param col: Column index of the cell
-// @param value: Character to set as the cell's data
-void set_MatrixData(Vector2D **matrix, int row, int col, char value)
+// _show_game_end(): Reveals the board and displays win/loss message
+// @param game: Pointer to the minesweeper game struct
+// @param won: 1 if player won, 0 if player lost
+void _show_game_end(minesweeper_struct *game, int won)
 {
-  matrix[row][col].data = value;
+  _reveal_board(game);
+  _display_game(game);
+  printf(won ? "\n--- YOU WIN! ---\n" : "\n--- BOMB HIT. GAME OVER. ---\n");
 }
 
 // =====================
@@ -464,15 +519,18 @@ void set_MatrixData(Vector2D **matrix, int row, int col, char value)
 // =====================
 
 // minesweeper_init(): Initialize a new minesweeper game
+// @param seed: The random seed to set
 // @param rows: Number of rows
 // @param cols: Number of columns
-// @param startingChar: Initial character for each cell
+// @param mines_amt: The amount of mines to place
 // @return: Pointer to the initialized game struct
-minesweeper_struct *minesweeper_init(int rows, int cols, char startingChar)
+minesweeper_struct *minesweeper_init(int seed, int rows, int cols, int mines_amt)
 {
   assert(rows < 27);
   assert(cols < 27);
-  assert(mine_amount < rows * cols);
+  assert(mines_amt < rows * cols);
+
+  srand(seed);
 
   minesweeper_struct *game = malloc(sizeof(minesweeper_struct));
 
@@ -480,11 +538,11 @@ minesweeper_struct *minesweeper_init(int rows, int cols, char startingChar)
 
   game->cols = cols;
 
-  game->mines_amt = mine_amount;
+  game->mines_amt = mines_amt;
 
-  game->visible_matrix = init_Matrix2D(rows, cols, startingChar);
+  game->visible_matrix = init_Matrix2D(rows, cols, starting_char);
 
-  game->hidden_matrix = init_hiddenMatrix(rows, cols, startingChar);
+  game->hidden_matrix = init_HiddenMatrix(rows, cols, starting_char);
 
   game->game_over = 0;
 
@@ -499,91 +557,52 @@ void minesweeper_game_loop(minesweeper_struct *game)
 {
   while (!game->game_over)
   {
-
-#ifdef _WIN32
-    system("cls");
-#else
-    system("clear");
-#endif
-
-    _printMatrixData(game->visible_matrix, game->rows, game->cols);
+    _display_game(game);
 
     char *move_str = _inputListener();
-    size_t len = strlen(move_str);
 
     if (strcmp(move_str, "--QUIT") == 0)
     {
-        printf("\nEXITING GAME.\n");
-        break;
+      printf("\nEXITING GAME.\n");
+      break;
     }
 
     if (strcmp(move_str, "--HELP") == 0)
     {
-        printf("\n--- COMMANDS ---\n\n- Playing moves: <Character><Integer>. Characters are on the X-Axis and the Integers are on the Y-Axis. (e.x. A1, B2, etc.)\n\n- Flagging: <Character><Integer>%c. Flags a certain cell; Doing it on a cell with a flag will un-flag it. (e.x. C4%c, G10%c, etc.)\n\n- Quitting the game: --quit.\n", flag_char, flag_char, flag_char);
-        _waitForEnter();
-        continue;
+      _show_help();
+      continue;
     }
 
     input_coordinate coords;
 
-    int is_flag = 0;
-    if (len > 1 && move_str[len-1] == flag_char)
+    int is_flag;
+
+    if (!_parse_and_validate_move(move_str, game, &coords, &is_flag))
     {
-        move_str[len-1] = '\0';
-        is_flag = 1;
-    }
-
-    _parseMove(move_str, &coords.row, &coords.col);
-
-    if (is_flag) move_str[len-1] = flag_char;
-
-    if (coords.row == -1 || coords.col == -1 ||
-        coords.row >= game->rows || coords.col >= game->cols)
-    {
-        printf("\n--- Invalid command. Type '--help' for all available commands ---\n");
-        _waitForEnter();
-        continue;
+      printf("\n--- Invalid command. Type '--help' for all available commands ---\n");
+      _waitForEnter();
+      continue;
     }
 
     if (is_flag)
     {
-        _toggleFlag(game, coords.row, coords.col);
-        continue;
+      _toggleFlag(game, coords.row, coords.col);
     }
-
-    _renderMove(game, coords.row, coords.col);
-
-    if (check_win(game))
+    else
     {
-      reveal_board(game);
+      _renderMove(game, coords.row, coords.col);
 
-#ifdef _WIN32
-      system("cls");
-#else
-      system("clear");
-#endif
-
-      _printMatrixData(game->visible_matrix, game->rows, game->cols);
-
-      printf("\n--- YOU WIN! ---\n");
-
-      break;
+      if (_check_win(game))
+      {
+        _show_game_end(game, 1);
+        break;
+      }
     }
   }
 
   if (game->game_over)
   {
-    reveal_board(game);
-
-#ifdef _WIN32
-    system("cls");
-#else
-    system("clear");
-#endif
-
-    _printMatrixData(game->visible_matrix, game->rows, game->cols);
-
-    printf("\n--- BOMB HIT. GAME OVER. ---\n");
+    _show_game_end(game, 0);
   }
 }
 
@@ -604,9 +623,7 @@ void minesweeper_destroy(minesweeper_struct *game)
 
 int main()
 {
-  srand(time(NULL));
-
-  minesweeper_struct *game = minesweeper_init(row_amount, col_amount, starting_char);
+  minesweeper_struct *game = minesweeper_init(time(NULL), row_amount, col_amount, mine_amount);
 
   minesweeper_game_loop(game);
 
