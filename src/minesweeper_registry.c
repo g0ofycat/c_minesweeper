@@ -446,9 +446,19 @@ void _showHelp(void)
 {
     printf("\n--- COMMANDS ---\n\n"
             "- Playing moves: <Character><Integer>. Characters are on the X-Axis and Integers on Y-Axis. (e.g. A1, B2)\n\n"
+            "- Getting Seed: --SEED\n\n"
             "- Flagging: <Character><Integer>%c. Flags/unflags a cell. (e.g. C4%c, G10%c)\n\n"
             "- Quitting: --quit\n",
             flag_char, flag_char, flag_char);
+
+    _waitForEnter();
+}
+
+// _showSeed(): Display the current seed
+// @param game: Pointer to the minesweeper game struct
+void _showSeed(minesweeper_struct *game)
+{
+    printf("SEED: %d", game->current_seed);
 
     _waitForEnter();
 }
@@ -539,6 +549,8 @@ minesweeper_struct *minesweeper_init(int seed, int rows, int cols, int mines_amt
 
     game->mines_initialized = 0;
 
+    game->current_seed = seed;
+
     return game;
 }
 
@@ -561,6 +573,12 @@ void minesweeper_game_loop(minesweeper_struct *game)
         if (strcmp(move_str, "--HELP") == 0)
         {
             _showHelp();
+            continue;
+        }
+
+        if (strcmp(move_str, "--SEED") == 0)
+        {
+            _showSeed(game);
             continue;
         }
 

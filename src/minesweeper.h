@@ -52,6 +52,7 @@ typedef struct
     int mines_amt;
     int game_over;
     int mines_initialized;
+    int current_seed;
 } minesweeper_struct;
 
 // =====================
@@ -198,6 +199,10 @@ void _displayGame(minesweeper_struct *game);
 
 // _showHelp(): Displays the help menu with available commands
 void _showHelp(void);
+
+// _showSeed(): Display the current seed
+// @param game: Pointer to the minesweeper game struct
+void _showSeed(minesweeper_struct *game);
 
 // _showGameEnd(): Reveals the board and displays win/loss message
 // @param game: Pointer to the minesweeper game struct
