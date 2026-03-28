@@ -458,7 +458,7 @@ void _showHelp(void)
 // @param game: Pointer to the minesweeper game struct
 void _showSeed(minesweeper_struct *game)
 {
-    printf("SEED: %d", game->current_seed);
+    printf("\nSEED: %d\n", game->current_seed);
 
     _waitForEnter();
 }
