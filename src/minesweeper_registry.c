@@ -446,8 +446,8 @@ void _showHelp(void)
 {
     printf("\n--- COMMANDS ---\n\n"
             "- Playing moves: <Character><Integer>. Characters are on the X-Axis and Integers on Y-Axis. (e.g. A1, B2)\n\n"
-            "- Getting Seed: --SEED\n\n"
             "- Flagging: <Character><Integer>%c. Flags/unflags a cell. (e.g. C4%c, G10%c)\n\n"
+            "- Getting Seed: --SEED\n\n"
             "- Quitting: --quit\n",
             flag_char, flag_char, flag_char);
 
